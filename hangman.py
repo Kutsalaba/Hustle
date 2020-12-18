@@ -324,9 +324,9 @@ class Hangman:
     def __warnings_numbers_output(self, message: str):
         '''This function determines the output to the screen.
 
-        :param: message : str, message text
-        :param my_word: str, string with underlines characters, current guess of secret word;
-        :return
+        :param: message : str, message text;
+        :param my_word: str, string with underlines characters, current guess of secret word.
+
         '''
 
         if self.warning_left >= 0:
@@ -371,11 +371,9 @@ class Hangman:
             if new_input == HINT_SYMBOL:
                 self.__show_possible_matches(my_word)
 
-
             elif not new_input in ascii_letters or len(new_input) != 1:
                 self.__subtraction_attempts()
-                print(self.__warnings_numbers_output('That is not a valid letter'),my_word)
-
+                print(self.__warnings_numbers_output('That is not a valid letter'), my_word)
 
             elif new_input in ascii_letters  and len(new_input) == 1:
                 my_word, check_letters, conclusion = self.__perfect_input(new_input)
