@@ -28,13 +28,13 @@ class Hangman:
 
     Attributes
     ----------
-    warning_left : int
+    __warning_left : int
         Number of warnings in game
-    guesses_left : int
+    __guesses_left : int
         Number of guesses in game
     __secret_word : str
         Word from word_list at random
-    letters_guessed : set
+    __letters_guessed : set
         A set to store the letters to be entered
 
     Constants
@@ -73,6 +73,8 @@ class Hangman:
         This function displays information about the iterations of the game
     __game_results_output()
         This function displays information about the results of the game
+    __warnings_numbers_output(my_word)
+        This function determines the output to the screen.
     run_hangman()
         This is the main function. This function checks the user's input and calls up all other auxiliary functions
 
@@ -94,10 +96,10 @@ class Hangman:
         The class attributes are initialized in this constructor
         '''
 
-        self.warning_left = self.WARNING_LEFT
-        self.guesses_left = self.GUESSES_LEFT
+        self.__warning_left = self.WARNING_LEFT
+        self.__guesses_left = self.GUESSES_LEFT
         self.__secret_word = self.__choose_word()
-        self.letters_guessed = set()
+        self.__letters_guessed = set()
 
 
     @classmethod
@@ -134,7 +136,7 @@ class Hangman:
         '''
 
         for char in self.__secret_word:
-            if char not in self.letters_guessed:
+            if char not in self.__letters_guessed:
                 return False
 
         return True
@@ -151,7 +153,7 @@ class Hangman:
         my_word = []
 
         for char in self.__secret_word:
-            if char in self.letters_guessed:
+            if char in self.__letters_guessed:
                 my_word.append(char)
             else:
                 my_word.append(UNKNOWN_LETTER)
@@ -168,7 +170,7 @@ class Hangman:
         roster = []
 
         for char in string.ascii_lowercase:
-            if char not in self.letters_guessed:
+            if char not in self.__letters_guessed:
                 roster.append(char)
         return ''.join(roster)
 
@@ -181,9 +183,9 @@ class Hangman:
         '''
 
         if new_input in VOWELS_LETTERS:
-            self.guesses_left -= 2
+            self.__guesses_left -= 2
         else:
-            self.guesses_left -= 1
+            self.__guesses_left -= 1
         conclusion = "Oops! That letter is not in my word: "
 
         return conclusion
@@ -195,10 +197,10 @@ class Hangman:
         :return: the number of warnings remaining, number of remaining attempts
         '''
 
-        if self.warning_left == 0:
-            self.guesses_left -= 1
+        if self.__warning_left < 0:
+            self.__guesses_left -= 1
         else:
-            self.warning_left -= 1
+            self.__warning_left -= 1
 
 
     def __perfect_input(self, new_input: str):
@@ -212,20 +214,18 @@ class Hangman:
         '''
         new_input = new_input.lower()
 
-        if new_input in self.__secret_word:
-            if new_input in self.letters_guessed:
-                self.__subtraction_attempts()
-                conclusion = f"Oops! You've already guessed that letter. You now have {self.warning_left} warnings: "
-            else:
-                conclusion = "Good guess: "
-        else:
-            if new_input not in self.letters_guessed:
-                conclusion = self.__warning_letters(new_input)
-            else:
-                self.__subtraction_attempts()
-                conclusion = f"Oops! You've already guessed that letter. You now have {self.warning_left} warnings: "
+        if new_input in self.__secret_word and new_input not in self.__letters_guessed :
+            conclusion = "Good guess: "
 
-        self.letters_guessed.add(new_input)
+        elif new_input in self.__letters_guessed:
+            self.__subtraction_attempts()
+            conclusion = self.__warnings_numbers_output("You've already guessed that letter")
+
+        elif new_input not in self.__secret_word and new_input not in self.__letters_guessed:
+            conclusion = self.__warning_letters(new_input)
+
+
+        self.__letters_guessed.add(new_input)
         check_letters = self.__get_available_letters()
         my_word = self.__get_guessed_word()
 
@@ -248,7 +248,7 @@ class Hangman:
 
         for char, new in zip(my_word, other_word):
             if not (char == UNKNOWN_LETTER or char == new) or (char == UNKNOWN_LETTER and new in my_word) or \
-                    (new in self.letters_guessed and new != char):
+                    (new in self.__letters_guessed and new != char):
                 return False
 
         return True
@@ -297,7 +297,7 @@ class Hangman:
         '''
 
         print('-' * 16)
-        print(f"You have {self.guesses_left} guesses left")
+        print(f"You have {self.__guesses_left} guesses left")
         print(f"Available Letters: {available_letters}")
 
 
@@ -306,18 +306,34 @@ class Hangman:
 
         '''
 
-        if self.guesses_left > 0 and self.__guess_word():
+        if self.__guesses_left > 0 and self.__guess_word():
             # Victory
-            calculate_score = len(set(self.__secret_word)) * self.guesses_left
+            calculate_score = len(set(self.__secret_word)) * self.__guesses_left
             print('_' * 12)
             print("Congratulations, you won!")
             print("Your total score for this game is:", calculate_score)
 
-        elif self.guesses_left <= 0 or self.__guess_word():
+        elif self.__guesses_left <= 0 or self.__guess_word():
             # Loose
             print('_' * 12)
             print(f"Sorry,you ran out of guesses. The word was {self.__secret_word}.")
 
+
+    def __warnings_numbers_output(self, message: str):
+        '''This function determines the output to the screen.
+
+        :param: message : str, message text;
+        :param my_word: str, string with underlines characters, current guess of secret word.
+
+        '''
+
+        if self.__warning_left >= 0:
+            conclusion = f"Oops! {message}. You have {self.__warning_left} warnings left:"
+            if self.__warning_left == 0:
+                self.__warning_left -= 1
+        else:
+            conclusion = f"Oops! {message}. You have no warnings left so you lose one guess:"
+        return conclusion
 
     def run_hangman(self):
         '''This is the main function. This function checks the input of users,
@@ -344,18 +360,19 @@ class Hangman:
         self.__game_beginning_output()
 
         # Main loop of game - each try is an iteration of that loop.
-        while self.guesses_left > 0 and not self.__guess_word():
+        while self.__guesses_left > 0 and not self.__guess_word():
 
             self.__game_iterations_output(self.__get_available_letters())
 
             new_input = input("Please guess a letter: ")
 
+            # check if there is an element HINT_SYMBOL
             if new_input == HINT_SYMBOL:
                 self.__show_possible_matches(my_word)
 
             elif not new_input in ascii_letters or len(new_input) != 1:
                 self.__subtraction_attempts()
-                print(f"Oops! That is not a valid letter. You have {self.warning_left} warnings left: {my_word}")
+                print(self.__warnings_numbers_output('That is not a valid letter'), my_word)
 
             elif new_input in ascii_letters  and len(new_input) == 1:
                 my_word, check_letters, conclusion = self.__perfect_input(new_input)
